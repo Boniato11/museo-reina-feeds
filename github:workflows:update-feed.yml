@@ -1,0 +1,40 @@
+name: 🗓️ Actualizar Feed Semanal
+
+on:
+  schedule:
+    # Ejecutar cada lunes a las 09:00 UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:  # Permite ejecución manual
+  push:
+    branches: [ main ]
+
+jobs:
+  update-feed:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Descargar código
+      uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: 🐍 Configurar Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: 📦 Instalar dependencias
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: 🎯 Generar feed RSS
+      run: python museo_feed_generator.py
+      
+    - name: 💾 Guardar cambios
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add exposiciones-reina-sofia.xml
+        git diff --staged --quiet || git commit -m "🔄 Actualizar feed - $(date +'%Y-%m-%d %H:%M')"
+        git push
